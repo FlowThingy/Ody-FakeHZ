@@ -5,6 +5,7 @@ using OdyFakeHZ.Core.Services;
 using OdyFakeHZ.Core.Models;
 using OdyFakeHZ.Engine.Capture;
 using OdyFakeHZ.Engine;
+using OdyFakeHZ.Engine.Compositor;
 
 namespace OdyFakeHZ.UI;
 
@@ -16,6 +17,8 @@ public sealed partial class MainWindow : Window
     private readonly DisplayManager _displayManager;
     private readonly DirectXCaptureManager _captureManager;
     private readonly InterpolationEngine _interpolationEngine;
+    private readonly CompositorManager _compositorManager;
+    private readonly ApplicationFilterManager _appFilterManager;
     private Microsoft.UI.Dispatching.DispatcherQueue? _dispatcherQueue;
 
     public MainWindow()
@@ -35,6 +38,11 @@ public sealed partial class MainWindow : Window
         
         _interpolationEngine = new InterpolationEngine();
         _interpolationEngine.FrameGenerated += OnFrameGenerated;
+        
+        _compositorManager = new CompositorManager();
+        _compositorManager.StatusChanged += OnCompositorStatus;
+
+        _appFilterManager = new ApplicationFilterManager();
         
         _dispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
         
@@ -58,6 +66,12 @@ public sealed partial class MainWindow : Window
         LoadActiveProfile();
         HighlightProfileCard(GamingProfileCard);
         LoadMonitorInfo();
+    }
+
+    private void OnCompositorStatus(object? sender, string status)
+    {
+        // Log compositor status for debugging
+        System.Diagnostics.Debug.WriteLine($"Compositor: {status}");
     }
 
     private void LoadMonitorInfo()
@@ -85,8 +99,10 @@ public sealed partial class MainWindow : Window
 
     private void OnFrameGenerated(object? sender, OdyFakeHZ.Engine.Interpolation.InterpolatedFrame frame)
     {
-        // Frame generated successfully
-        // In future: send to display compositor
+        if (_compositorManager.IsRunning)
+        {
+            _compositorManager.PresentFrame(frame);
+        }
     }
 
     private void OnMetricsUpdated(object? sender, PerformanceData data)
@@ -155,6 +171,15 @@ public sealed partial class MainWindow : Window
                 var currentHz = _displayManager.GetCurrentMonitorInfo().RefreshRate;
                 var multiplier = Math.Max(1, profile.TargetHz / currentHz);
 
+                // Initialize compositor
+                if (!_compositorManager.IsInitialized)
+                {
+                    if (!_compositorManager.Initialize())
+                    {
+                        throw new Exception("Failed to initialize compositor");
+                    }
+                }
+
                 // Initialize interpolation engine
                 var mode = profile.ProcessingMode switch
                 {
@@ -176,7 +201,8 @@ public sealed partial class MainWindow : Window
                     _interpolationEngine.Start();
                 }
 
-                // Start monitoring and capture
+                // Start compositor, monitoring and capture
+                _compositorManager.Start();
                 _performanceMonitor.StartMonitoring();
                 _captureManager.StartCapture(currentHz);
 
@@ -195,6 +221,7 @@ public sealed partial class MainWindow : Window
         {
             EnableButton.Content = "ENABLE ODY-FAKEHZ";
             
+            _compositorManager.Stop();
             _interpolationEngine.Stop();
             _performanceMonitor.StopMonitoring();
             _captureManager.StopCapture();
