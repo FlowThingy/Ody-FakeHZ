@@ -9,12 +9,329 @@
     Width="1200"
     Height="800">
 
-    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
-        <TextBlock 
-            Text="Ody-FakeHZ - Motion Smoothness Enhancement Tool" 
-            VerticalAlignment="Center" 
-            HorizontalAlignment="Center"
-            FontSize="24"
-            FontWeight="SemiBold"/>
+    <Grid Background="{StaticResource AppBackgroundBrush}">
+        <!-- Main Layout: Sidebar + Content -->
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="280"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Left Sidebar -->
+        <Border 
+            Grid.Column="0" 
+            Background="{StaticResource SurfaceBrush}"
+            BorderBrush="{StaticResource BorderBrush}"
+            BorderThickness="0,0,1,0"
+            Padding="20">
+            
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- App Title -->
+                <StackPanel Grid.Row="0" Spacing="8" Margin="0,0,0,32">
+                    <TextBlock 
+                        Text="Ody-FakeHZ" 
+                        Style="{StaticResource HeaderTextStyle}"/>
+                    <TextBlock 
+                        Text="Motion Smoothness" 
+                        Style="{StaticResource CaptionTextStyle}"
+                        Foreground="{StaticResource TextSecondaryBrush}"/>
+                </StackPanel>
+
+                <!-- Profile Cards -->
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="12">
+                        <TextBlock 
+                            Text="PROFILES" 
+                            Style="{StaticResource CaptionTextStyle}"
+                            Margin="0,0,0,8"/>
+
+                        <!-- Gaming Profile Card -->
+                        <Border 
+                            x:Name="GamingProfileCard"
+                            Style="{StaticResource ProfileCardStyle}"
+                            PointerPressed="ProfileCard_PointerPressed"
+                            Tag="Gaming">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Icon Placeholder -->
+                                <Border 
+                                    Grid.Column="0"
+                                    Width="40" Height="40"
+                                    Background="{StaticResource SurfaceElevatedBrush}"
+                                    CornerRadius="20"
+                                    Margin="0,0,12,0">
+                                    <TextBlock 
+                                        Text="🎮" 
+                                        FontSize="20"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"/>
+                                </Border>
+
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock 
+                                        Text="Gaming" 
+                                        Style="{StaticResource SubheaderTextStyle}"
+                                        FontSize="15"/>
+                                    <TextBlock 
+                                        Text="Low latency, balanced quality" 
+                                        Style="{StaticResource CaptionTextStyle}"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <!-- Movies Profile Card -->
+                        <Border 
+                            x:Name="MoviesProfileCard"
+                            Style="{StaticResource ProfileCardStyle}"
+                            PointerPressed="ProfileCard_PointerPressed"
+                            Tag="Movies">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <Border 
+                                    Grid.Column="0"
+                                    Width="40" Height="40"
+                                    Background="{StaticResource SurfaceElevatedBrush}"
+                                    CornerRadius="20"
+                                    Margin="0,0,12,0">
+                                    <TextBlock 
+                                        Text="🎬" 
+                                        FontSize="20"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"/>
+                                </Border>
+
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock 
+                                        Text="Movies" 
+                                        Style="{StaticResource SubheaderTextStyle}"
+                                        FontSize="15"/>
+                                    <TextBlock 
+                                        Text="High quality, smooth playback" 
+                                        Style="{StaticResource CaptionTextStyle}"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <!-- Desktop Profile Card -->
+                        <Border 
+                            x:Name="DesktopProfileCard"
+                            Style="{StaticResource ProfileCardStyle}"
+                            PointerPressed="ProfileCard_PointerPressed"
+                            Tag="Desktop">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <Border 
+                                    Grid.Column="0"
+                                    Width="40" Height="40"
+                                    Background="{StaticResource SurfaceElevatedBrush}"
+                                    CornerRadius="20"
+                                    Margin="0,0,12,0">
+                                    <TextBlock 
+                                        Text="🖥️" 
+                                        FontSize="20"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"/>
+                                </Border>
+
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock 
+                                        Text="Desktop" 
+                                        Style="{StaticResource SubheaderTextStyle}"
+                                        FontSize="15"/>
+                                    <TextBlock 
+                                        Text="Balanced for productivity" 
+                                        Style="{StaticResource CaptionTextStyle}"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- Performance Monitor (Bottom) -->
+                <Border 
+                    Grid.Row="2" 
+                    Style="{StaticResource CardStyle}"
+                    Margin="0,16,0,0">
+                    <StackPanel Spacing="8">
+                        <TextBlock 
+                            Text="PERFORMANCE" 
+                            Style="{StaticResource CaptionTextStyle}"/>
+                        
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock 
+                                Grid.Column="0"
+                                Text="GPU Usage" 
+                                Style="{StaticResource BodyTextStyle}"/>
+                            <TextBlock 
+                                Grid.Column="1"
+                                Text="0%" 
+                                Style="{StaticResource BodyTextStyle}"
+                                Foreground="{StaticResource TextPrimaryBrush}"/>
+                        </Grid>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock 
+                                Grid.Column="0"
+                                Text="Latency" 
+                                Style="{StaticResource BodyTextStyle}"/>
+                            <TextBlock 
+                                Grid.Column="1"
+                                Text="—" 
+                                Style="{StaticResource BodyTextStyle}"
+                                Foreground="{StaticResource TextPrimaryBrush}"/>
+                        </Grid>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock 
+                                Grid.Column="0"
+                                Text="Status" 
+                                Style="{StaticResource BodyTextStyle}"/>
+                            <TextBlock 
+                                Grid.Column="1"
+                                Text="Inactive" 
+                                Style="{StaticResource BodyTextStyle}"
+                                Foreground="{StaticResource TextSecondaryBrush}"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- Main Content Area -->
+        <Grid Grid.Column="1" Padding="40">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Header with Mode Toggle -->
+            <Grid Grid.Row="0" Margin="0,0,0,32">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock 
+                    Grid.Column="0"
+                    Text="Motion Smoothness Control" 
+                    Style="{StaticResource HeaderTextStyle}"
+                    VerticalAlignment="Center"/>
+
+                <!-- Simple/Advanced Mode Toggle -->
+                <StackPanel 
+                    Grid.Column="1" 
+                    Orientation="Horizontal" 
+                    Spacing="12"
+                    VerticalAlignment="Center">
+                    <TextBlock 
+                        Text="Simple" 
+                        Style="{StaticResource BodyTextStyle}"
+                        VerticalAlignment="Center"/>
+                    <ToggleSwitch 
+                        x:Name="ModeToggle"
+                        Style="{StaticResource MonochromeToggleSwitchStyle}"
+                        Toggled="ModeToggle_Toggled"/>
+                    <TextBlock 
+                        Text="Advanced" 
+                        Style="{StaticResource BodyTextStyle}"
+                        VerticalAlignment="Center"/>
+                </StackPanel>
+            </Grid>
+
+            <!-- Content Area -->
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                <StackPanel x:Name="MainContent" Spacing="24">
+                    
+                    <!-- Enable Button -->
+                    <Button 
+                        x:Name="EnableButton"
+                        Content="ENABLE ODY-FAKEHZ"
+                        Style="{StaticResource AccentButtonStyle}"
+                        Height="56"
+                        FontSize="16"
+                        Click="EnableButton_Click"/>
+
+                    <!-- Status Display -->
+                    <Border Style="{StaticResource CardStyle}">
+                        <StackPanel Spacing="8">
+                            <TextBlock 
+                                Text="STATUS" 
+                                Style="{StaticResource CaptionTextStyle}"/>
+                            <TextBlock 
+                                x:Name="StatusText"
+                                Text="Inactive • Ready to enable" 
+                                Style="{StaticResource SubheaderTextStyle}"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Hz Slider Placeholder -->
+                    <Border Style="{StaticResource CardStyle}">
+                        <StackPanel Spacing="16">
+                            <TextBlock 
+                                Text="TARGET SMOOTHNESS" 
+                                Style="{StaticResource CaptionTextStyle}"/>
+                            <TextBlock 
+                                Text="120 Hz" 
+                                Style="{StaticResource HeaderTextStyle}"
+                                FontSize="48"
+                                HorizontalAlignment="Center"
+                                Margin="0,16,0,16"/>
+                            <Slider 
+                                Minimum="60" 
+                                Maximum="240" 
+                                Value="120"
+                                StepFrequency="15"
+                                TickFrequency="30"
+                                TickPlacement="BottomRight"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Advanced Settings (Hidden initially) -->
+                    <StackPanel x:Name="AdvancedSettings" Visibility="Collapsed" Spacing="16">
+                        <TextBlock 
+                            Text="ADVANCED SETTINGS" 
+                            Style="{StaticResource CaptionTextStyle}"/>
+                        
+                        <Border Style="{StaticResource CardStyle}">
+                            <TextBlock 
+                                Text="Advanced controls will appear here" 
+                                Style="{StaticResource BodyTextStyle}"
+                                HorizontalAlignment="Center"
+                                Margin="0,16"/>
+                        </Border>
+                    </StackPanel>
+
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
     </Grid>
 </Window>
