@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using OdyFakeHZ.Core.Services;
 using OdyFakeHZ.Core.Models;
+using OdyFakeHZ.Engine.Capture;
 
 namespace OdyFakeHZ.UI;
 
@@ -11,6 +12,8 @@ public sealed partial class MainWindow : Window
     private bool _isEnabled = false;
     private readonly ProfileManager _profileManager;
     private readonly PerformanceMonitor _performanceMonitor;
+    private readonly DisplayManager _displayManager;
+    private readonly DirectXCaptureManager _captureManager;
     private Microsoft.UI.Dispatching.DispatcherQueue? _dispatcherQueue;
 
     public MainWindow()
@@ -22,6 +25,10 @@ public sealed partial class MainWindow : Window
         
         _performanceMonitor = new PerformanceMonitor();
         _performanceMonitor.MetricsUpdated += OnMetricsUpdated;
+
+        _displayManager = new DisplayManager();
+        _captureManager = new DirectXCaptureManager();
+        _captureManager.FrameCaptured += OnFrameCaptured;
         
         _dispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
         
@@ -44,6 +51,25 @@ public sealed partial class MainWindow : Window
 
         LoadActiveProfile();
         HighlightProfileCard(GamingProfileCard);
+        LoadMonitorInfo();
+    }
+
+    private void LoadMonitorInfo()
+    {
+        try
+        {
+            var info = _displayManager.GetCurrentMonitorInfo();
+            MonitorInfoText.Text = $"Display: {info}";
+        }
+        catch
+        {
+            MonitorInfoText.Text = "Display: Unable to detect";
+        }
+    }
+
+    private void OnFrameCaptured(object? sender, CapturedFrame frame)
+    {
+        _performanceMonitor.RecordFrame();
     }
 
     private void OnMetricsUpdated(object? sender, PerformanceData data)
@@ -95,22 +121,43 @@ public sealed partial class MainWindow : Window
 
         if (_isEnabled)
         {
-            EnableButton.Content = "DISABLE ODY-FAKEHZ";
-            _performanceMonitor.StartMonitoring();
-            
-            var profile = _profileManager.ActiveProfile;
-            if (profile != null)
+            try
             {
-                StatusText.Text = $"Active • {profile.Name} • {profile.TargetHz}Hz";
+                EnableButton.Content = "DISABLE ODY-FAKEHZ";
+                
+                // Validate target Hz
+                var profile = _profileManager.ActiveProfile;
+                if (profile != null && !_displayManager.ValidateRefreshRate(profile.TargetHz))
+                {
+                    // Show warning but continue
+                    StatusText.Text = $"Warning: {profile.TargetHz}Hz may exceed monitor capability";
+                }
+
+                // Start monitoring and capture
+                _performanceMonitor.StartMonitoring();
+                _captureManager.StartCapture(60);
+
+                if (profile != null)
+                {
+                    StatusText.Text = $"Active • {profile.Name} • {profile.TargetHz}Hz";
+                }
+                
+                EngineStatusText.Text = "Active";
+                EngineStatusText.Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextPrimaryBrush"];
             }
-            
-            EngineStatusText.Text = "Active";
-            EngineStatusText.Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextPrimaryBrush"];
+            catch (Exception ex)
+            {
+                _isEnabled = false;
+                EnableButton.Content = "ENABLE ODY-FAKEHZ";
+                StatusText.Text = $"Error: {ex.Message}";
+            }
         }
         else
         {
             EnableButton.Content = "ENABLE ODY-FAKEHZ";
+            
             _performanceMonitor.StopMonitoring();
+            _captureManager.StopCapture();
             
             var profile = _profileManager.ActiveProfile;
             if (profile != null)

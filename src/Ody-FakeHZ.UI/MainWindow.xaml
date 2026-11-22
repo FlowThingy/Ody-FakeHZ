@@ -294,6 +294,11 @@
                                 x:Name="StatusText"
                                 Text="Inactive • Ready to enable" 
                                 Style="{StaticResource SubheaderTextStyle}"/>
+                            <TextBlock 
+                                x:Name="MonitorInfoText"
+                                Text="Display: —" 
+                                Style="{StaticResource CaptionTextStyle}"
+                                Foreground="{StaticResource TextSecondaryBrush}"/>
                         </StackPanel>
                     </Border>
 
