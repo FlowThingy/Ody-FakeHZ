@@ -10,6 +10,8 @@ public sealed partial class MainWindow : Window
 {
     private bool _isEnabled = false;
     private readonly ProfileManager _profileManager;
+    private readonly PerformanceMonitor _performanceMonitor;
+    private Microsoft.UI.Dispatching.DispatcherQueue? _dispatcherQueue;
 
     public MainWindow()
     {
@@ -17,6 +19,11 @@ public sealed partial class MainWindow : Window
         
         _profileManager = new ProfileManager();
         _profileManager.ProfileChanged += OnProfileChanged;
+        
+        _performanceMonitor = new PerformanceMonitor();
+        _performanceMonitor.MetricsUpdated += OnMetricsUpdated;
+        
+        _dispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
         
         Title = "Ody-FakeHZ";
         
@@ -37,6 +44,21 @@ public sealed partial class MainWindow : Window
 
         LoadActiveProfile();
         HighlightProfileCard(GamingProfileCard);
+    }
+
+    private void OnMetricsUpdated(object? sender, PerformanceData data)
+    {
+        _dispatcherQueue?.TryEnqueue(() =>
+        {
+            GpuUsageText.Text = $"{data.GpuUsage:F0}%";
+            LatencyText.Text = _isEnabled ? $"{data.LatencyMs:F1}ms" : "—";
+            
+            if (_isEnabled)
+            {
+                EngineStatusText.Text = "Active";
+                EngineStatusText.Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextPrimaryBrush"];
+            }
+        });
     }
 
     private void LoadActiveProfile()
@@ -74,20 +96,32 @@ public sealed partial class MainWindow : Window
         if (_isEnabled)
         {
             EnableButton.Content = "DISABLE ODY-FAKEHZ";
+            _performanceMonitor.StartMonitoring();
+            
             var profile = _profileManager.ActiveProfile;
             if (profile != null)
             {
                 StatusText.Text = $"Active • {profile.Name} • {profile.TargetHz}Hz";
             }
+            
+            EngineStatusText.Text = "Active";
+            EngineStatusText.Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextPrimaryBrush"];
         }
         else
         {
             EnableButton.Content = "ENABLE ODY-FAKEHZ";
+            _performanceMonitor.StopMonitoring();
+            
             var profile = _profileManager.ActiveProfile;
             if (profile != null)
             {
                 StatusText.Text = $"{profile.Name} profile • Ready";
             }
+            
+            GpuUsageText.Text = "0%";
+            LatencyText.Text = "—";
+            EngineStatusText.Text = "Idle";
+            EngineStatusText.Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextSecondaryBrush"];
         }
     }
 

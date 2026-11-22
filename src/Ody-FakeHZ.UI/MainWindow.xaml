@@ -185,6 +185,7 @@
                                 Text="GPU Usage" 
                                 Style="{StaticResource BodyTextStyle}"/>
                             <TextBlock 
+                                x:Name="GpuUsageText"
                                 Grid.Column="1"
                                 Text="0%" 
                                 Style="{StaticResource BodyTextStyle}"
@@ -201,6 +202,7 @@
                                 Text="Latency" 
                                 Style="{StaticResource BodyTextStyle}"/>
                             <TextBlock 
+                                x:Name="LatencyText"
                                 Grid.Column="1"
                                 Text="—" 
                                 Style="{StaticResource BodyTextStyle}"
@@ -214,11 +216,12 @@
                             </Grid.ColumnDefinitions>
                             <TextBlock 
                                 Grid.Column="0"
-                                Text="Status" 
+                                Text="Engine" 
                                 Style="{StaticResource BodyTextStyle}"/>
                             <TextBlock 
+                                x:Name="EngineStatusText"
                                 Grid.Column="1"
-                                Text="Inactive" 
+                                Text="Idle" 
                                 Style="{StaticResource BodyTextStyle}"
                                 Foreground="{StaticResource TextSecondaryBrush}"/>
                         </Grid>
