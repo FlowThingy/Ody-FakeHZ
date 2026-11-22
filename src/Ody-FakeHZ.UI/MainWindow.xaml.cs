@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml.Input;
 using OdyFakeHZ.Core.Services;
 using OdyFakeHZ.Core.Models;
 using OdyFakeHZ.Engine.Capture;
+using OdyFakeHZ.Engine;
 
 namespace OdyFakeHZ.UI;
 
@@ -14,6 +15,7 @@ public sealed partial class MainWindow : Window
     private readonly PerformanceMonitor _performanceMonitor;
     private readonly DisplayManager _displayManager;
     private readonly DirectXCaptureManager _captureManager;
+    private readonly InterpolationEngine _interpolationEngine;
     private Microsoft.UI.Dispatching.DispatcherQueue? _dispatcherQueue;
 
     public MainWindow()
@@ -27,8 +29,12 @@ public sealed partial class MainWindow : Window
         _performanceMonitor.MetricsUpdated += OnMetricsUpdated;
 
         _displayManager = new DisplayManager();
+        
         _captureManager = new DirectXCaptureManager();
         _captureManager.FrameCaptured += OnFrameCaptured;
+        
+        _interpolationEngine = new InterpolationEngine();
+        _interpolationEngine.FrameGenerated += OnFrameGenerated;
         
         _dispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
         
@@ -70,6 +76,17 @@ public sealed partial class MainWindow : Window
     private void OnFrameCaptured(object? sender, CapturedFrame frame)
     {
         _performanceMonitor.RecordFrame();
+        
+        if (_interpolationEngine.IsRunning)
+        {
+            _interpolationEngine.ProcessCapturedFrame(frame);
+        }
+    }
+
+    private void OnFrameGenerated(object? sender, OdyFakeHZ.Engine.Interpolation.InterpolatedFrame frame)
+    {
+        // Frame generated successfully
+        // In future: send to display compositor
     }
 
     private void OnMetricsUpdated(object? sender, PerformanceData data)
@@ -123,25 +140,47 @@ public sealed partial class MainWindow : Window
         {
             try
             {
+                var profile = _profileManager.ActiveProfile;
+                if (profile == null) return;
+
                 EnableButton.Content = "DISABLE ODY-FAKEHZ";
                 
                 // Validate target Hz
-                var profile = _profileManager.ActiveProfile;
-                if (profile != null && !_displayManager.ValidateRefreshRate(profile.TargetHz))
+                if (!_displayManager.ValidateRefreshRate(profile.TargetHz))
                 {
-                    // Show warning but continue
                     StatusText.Text = $"Warning: {profile.TargetHz}Hz may exceed monitor capability";
+                }
+
+                // Calculate interpolation multiplier
+                var currentHz = _displayManager.GetCurrentMonitorInfo().RefreshRate;
+                var multiplier = Math.Max(1, profile.TargetHz / currentHz);
+
+                // Initialize interpolation engine
+                var mode = profile.ProcessingMode switch
+                {
+                    ProcessingMode.GPU => OdyFakeHZ.Engine.ProcessingMode.GPU,
+                    ProcessingMode.Hybrid => OdyFakeHZ.Engine.ProcessingMode.Hybrid,
+                    _ => OdyFakeHZ.Engine.ProcessingMode.CPU
+                };
+
+                if (_interpolationEngine.Initialize(mode))
+                {
+                    _interpolationEngine.TargetMultiplier = multiplier;
+                    _interpolationEngine.Quality = profile.QualityLevel switch
+                    {
+                        >= 80 => OdyFakeHZ.Engine.Interpolation.InterpolationQuality.High,
+                        >= 40 => OdyFakeHZ.Engine.Interpolation.InterpolationQuality.Balanced,
+                        _ => OdyFakeHZ.Engine.Interpolation.InterpolationQuality.Draft
+                    };
+                    
+                    _interpolationEngine.Start();
                 }
 
                 // Start monitoring and capture
                 _performanceMonitor.StartMonitoring();
-                _captureManager.StartCapture(60);
+                _captureManager.StartCapture(currentHz);
 
-                if (profile != null)
-                {
-                    StatusText.Text = $"Active • {profile.Name} • {profile.TargetHz}Hz";
-                }
-                
+                StatusText.Text = $"Active • {profile.Name} • {profile.TargetHz}Hz";
                 EngineStatusText.Text = "Active";
                 EngineStatusText.Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextPrimaryBrush"];
             }
@@ -156,6 +195,7 @@ public sealed partial class MainWindow : Window
         {
             EnableButton.Content = "ENABLE ODY-FAKEHZ";
             
+            _interpolationEngine.Stop();
             _performanceMonitor.StopMonitoring();
             _captureManager.StopCapture();
             
