@@ -1,25 +1,25 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using OdyFakeHZ.Core.Services;
+using OdyFakeHZ.Core.Models;
 
 namespace OdyFakeHZ.UI;
 
-/// <summary>
-/// The main application window.
-/// </summary>
 public sealed partial class MainWindow : Window
 {
     private bool _isEnabled = false;
-    private string _selectedProfile = "Gaming";
+    private readonly ProfileManager _profileManager;
 
     public MainWindow()
     {
         this.InitializeComponent();
         
-        // Set window properties
+        _profileManager = new ProfileManager();
+        _profileManager.ProfileChanged += OnProfileChanged;
+        
         Title = "Ody-FakeHZ";
         
-        // Center the window on screen
         var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
         var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hWnd);
         var appWindow = Microsoft.UI.Windowing.AppWindow.GetFromWindowId(windowId);
@@ -35,8 +35,36 @@ public sealed partial class MainWindow : Window
             }
         }
 
-        // Set initial profile selection
+        LoadActiveProfile();
         HighlightProfileCard(GamingProfileCard);
+    }
+
+    private void LoadActiveProfile()
+    {
+        var profile = _profileManager.ActiveProfile;
+        if (profile != null)
+        {
+            HzSliderControl.Value = profile.TargetHz;
+            UpdateStatusForProfile(profile);
+        }
+    }
+
+    private void OnProfileChanged(object? sender, Profile profile)
+    {
+        HzSliderControl.Value = profile.TargetHz;
+        UpdateStatusForProfile(profile);
+    }
+
+    private void UpdateStatusForProfile(Profile profile)
+    {
+        if (_isEnabled)
+        {
+            StatusText.Text = $"Active • {profile.Name} • {profile.TargetHz}Hz";
+        }
+        else
+        {
+            StatusText.Text = $"{profile.Name} profile • Ready";
+        }
     }
 
     private void EnableButton_Click(object sender, RoutedEventArgs e)
@@ -46,12 +74,20 @@ public sealed partial class MainWindow : Window
         if (_isEnabled)
         {
             EnableButton.Content = "DISABLE ODY-FAKEHZ";
-            StatusText.Text = "Active • 120Hz Target • Processing";
+            var profile = _profileManager.ActiveProfile;
+            if (profile != null)
+            {
+                StatusText.Text = $"Active • {profile.Name} • {profile.TargetHz}Hz";
+            }
         }
         else
         {
             EnableButton.Content = "ENABLE ODY-FAKEHZ";
-            StatusText.Text = "Inactive • Ready to enable";
+            var profile = _profileManager.ActiveProfile;
+            if (profile != null)
+            {
+                StatusText.Text = $"{profile.Name} profile • Ready";
+            }
         }
     }
 
@@ -60,17 +96,7 @@ public sealed partial class MainWindow : Window
         var toggle = sender as ToggleSwitch;
         if (toggle == null) return;
 
-        // Show/hide advanced settings based on toggle
-        if (toggle.IsOn)
-        {
-            // Advanced mode
-            AdvancedSettings.Visibility = Visibility.Visible;
-        }
-        else
-        {
-            // Simple mode
-            AdvancedSettings.Visibility = Visibility.Collapsed;
-        }
+        AdvancedSettings.Visibility = toggle.IsOn ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void ProfileCard_PointerPressed(object sender, PointerRoutedEventArgs e)
@@ -78,14 +104,21 @@ public sealed partial class MainWindow : Window
         var card = sender as Border;
         if (card == null) return;
 
-        _selectedProfile = card.Tag as string ?? "Gaming";
+        var profileName = card.Tag as string ?? "Gaming";
+        _profileManager.SetActiveProfile(profileName);
 
-        // Update visual selection
         ResetProfileCards();
         HighlightProfileCard(card);
+    }
 
-        // Load profile settings (placeholder for now)
-        UpdateProfileSettings(_selectedProfile);
+    private void HzSlider_ValueChanged(object? sender, int value)
+    {
+        _profileManager.UpdateActiveProfile(profile => profile.TargetHz = value);
+        
+        if (_isEnabled)
+        {
+            StatusText.Text = $"Active • {_profileManager.ActiveProfile?.Name} • {value}Hz";
+        }
     }
 
     private void ResetProfileCards()
@@ -98,11 +131,5 @@ public sealed partial class MainWindow : Window
     private void HighlightProfileCard(Border card)
     {
         card.Background = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["SurfaceElevatedBrush"];
-    }
-
-    private void UpdateProfileSettings(string profileName)
-    {
-        // Placeholder: In Task 3, this will load actual profile settings
-        StatusText.Text = $"{profileName} profile selected • Ready to enable";
     }
 }

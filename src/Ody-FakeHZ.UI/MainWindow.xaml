@@ -4,6 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:controls="using:OdyFakeHZ.UI.Controls"
     mc:Ignorable="d"
     Title="Ody-FakeHZ"
     Width="1200"
@@ -293,25 +294,15 @@
                         </StackPanel>
                     </Border>
 
-                    <!-- Hz Slider Placeholder -->
+                    <!-- Hz Slider -->
                     <Border Style="{StaticResource CardStyle}">
                         <StackPanel Spacing="16">
                             <TextBlock 
                                 Text="TARGET SMOOTHNESS" 
                                 Style="{StaticResource CaptionTextStyle}"/>
-                            <TextBlock 
-                                Text="120 Hz" 
-                                Style="{StaticResource HeaderTextStyle}"
-                                FontSize="48"
-                                HorizontalAlignment="Center"
-                                Margin="0,16,0,16"/>
-                            <Slider 
-                                Minimum="60" 
-                                Maximum="240" 
-                                Value="120"
-                                StepFrequency="15"
-                                TickFrequency="30"
-                                TickPlacement="BottomRight"/>
+                            <controls:HzSlider 
+                                x:Name="HzSliderControl"
+                                ValueChanged="HzSlider_ValueChanged"/>
                         </StackPanel>
                     </Border>
 
