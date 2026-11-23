@@ -6,6 +6,7 @@ using OdyFakeHZ.Core.Models;
 using OdyFakeHZ.Engine.Capture;
 using OdyFakeHZ.Engine;
 using OdyFakeHZ.Engine.Compositor;
+using OdyFakeHZ.UI.Services;
 
 namespace OdyFakeHZ.UI;
 
@@ -19,6 +20,8 @@ public sealed partial class MainWindow : Window
     private readonly InterpolationEngine _interpolationEngine;
     private readonly CompositorManager _compositorManager;
     private readonly ApplicationFilterManager _appFilterManager;
+    private readonly SettingsManager _settingsManager;
+    private readonly TrayIconManager _trayIcon;
     private Microsoft.UI.Dispatching.DispatcherQueue? _dispatcherQueue;
 
     public MainWindow()
@@ -43,6 +46,15 @@ public sealed partial class MainWindow : Window
         _compositorManager.StatusChanged += OnCompositorStatus;
 
         _appFilterManager = new ApplicationFilterManager();
+        _settingsManager = new SettingsManager();
+
+        _trayIcon = new TrayIconManager(this);
+        _trayIcon.EnableClicked += (s, e) => EnableOdyFakeHZ();
+        _trayIcon.DisableClicked += (s, e) => DisableOdyFakeHZ();
+        _trayIcon.ShowWindowClicked += (s, e) => ShowMainWindow();
+        _trayIcon.ExitClicked += (s, e) => Application.Current.Exit();
+        _trayIcon.ProfileClicked += (s, profileName) => SwitchProfile(profileName);
+        _trayIcon.Initialize();
         
         _dispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
         
@@ -63,9 +75,60 @@ public sealed partial class MainWindow : Window
             }
         }
 
+        this.Closed += OnWindowClosed;
+
+        LoadSettings();
         LoadActiveProfile();
         HighlightProfileCard(GamingProfileCard);
         LoadMonitorInfo();
+    }
+
+    private void LoadSettings()
+    {
+        var settings = _settingsManager.LoadSettings();
+        
+        if (settings.MinimizeToTray)
+        {
+            // Future implementation: handle minimize to tray preference
+        }
+        
+        if (settings.StartWithWindows)
+        {
+            // Future implementation: auto-start registry setup
+        }
+        
+        if (settings.StartMinimized)
+        {
+            // Future implementation: start minimized to tray
+        }
+    }
+
+    private void OnWindowClosed(object sender, WindowEventArgs args)
+    {
+        _trayIcon.Dispose();
+        _compositorManager.Stop();
+        _interpolationEngine.Stop();
+        _performanceMonitor.StopMonitoring();
+        _captureManager.StopCapture();
+        
+        _settingsManager.SaveSettings(new AppSettings 
+        { 
+            MinimizeToTray = true,
+            StartWithWindows = false,
+            StartMinimized = false,
+            LastActiveProfile = _profileManager.ActiveProfile?.Name ?? "Gaming"
+        });
+    }
+
+    private void ShowMainWindow()
+    {
+        this.Activate();
+    }
+
+    private void SwitchProfile(string profileName)
+    {
+        _profileManager.SetActiveProfile(profileName);
+        _trayIcon.ShowNotification("Profile Changed", $"Switched to {profileName} profile");
     }
 
     private void OnCompositorStatus(object? sender, string status)
@@ -166,93 +229,105 @@ public sealed partial class MainWindow : Window
 
     private void EnableButton_Click(object sender, RoutedEventArgs e)
     {
-        _isEnabled = !_isEnabled;
-
-        if (_isEnabled)
+        if (!_isEnabled)
         {
-            try
-            {
-                var profile = _profileManager.ActiveProfile;
-                if (profile == null) return;
-
-                EnableButton.Content = "DISABLE ODY-FAKEHZ";
-                
-                // Validate target Hz
-                if (!_displayManager.ValidateRefreshRate(profile.TargetHz))
-                {
-                    StatusText.Text = $"Warning: {profile.TargetHz}Hz may exceed monitor capability";
-                }
-
-                // Calculate interpolation multiplier
-                var currentHz = _displayManager.GetCurrentMonitorInfo().RefreshRate;
-                var multiplier = Math.Max(1, profile.TargetHz / currentHz);
-
-                // Initialize compositor
-                if (!_compositorManager.IsInitialized)
-                {
-                    if (!_compositorManager.Initialize())
-                    {
-                        throw new Exception("Failed to initialize compositor");
-                    }
-                }
-
-                // Initialize interpolation engine
-                var mode = profile.ProcessingMode switch
-                {
-                    ProcessingMode.GPU => OdyFakeHZ.Engine.ProcessingMode.GPU,
-                    ProcessingMode.Hybrid => OdyFakeHZ.Engine.ProcessingMode.Hybrid,
-                    _ => OdyFakeHZ.Engine.ProcessingMode.CPU
-                };
-
-                if (_interpolationEngine.Initialize(mode))
-                {
-                    _interpolationEngine.TargetMultiplier = multiplier;
-                    _interpolationEngine.Quality = profile.QualityLevel switch
-                    {
-                        >= 80 => OdyFakeHZ.Engine.Interpolation.InterpolationQuality.High,
-                        >= 40 => OdyFakeHZ.Engine.Interpolation.InterpolationQuality.Balanced,
-                        _ => OdyFakeHZ.Engine.Interpolation.InterpolationQuality.Draft
-                    };
-                    
-                    _interpolationEngine.Start();
-                }
-
-                // Start compositor, monitoring and capture
-                _compositorManager.Start();
-                _performanceMonitor.StartMonitoring();
-                _captureManager.StartCapture(currentHz);
-
-                StatusText.Text = $"Active • {profile.Name} • {profile.TargetHz}Hz";
-                EngineStatusText.Text = "Active";
-                EngineStatusText.Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextPrimaryBrush"];
-            }
-            catch (Exception ex)
-            {
-                _isEnabled = false;
-                EnableButton.Content = "ENABLE ODY-FAKEHZ";
-                StatusText.Text = $"Error: {ex.Message}";
-            }
+            EnableOdyFakeHZ();
         }
         else
         {
-            EnableButton.Content = "ENABLE ODY-FAKEHZ";
-            
-            _compositorManager.Stop();
-            _interpolationEngine.Stop();
-            _performanceMonitor.StopMonitoring();
-            _captureManager.StopCapture();
-            
-            var profile = _profileManager.ActiveProfile;
-            if (profile != null)
-            {
-                StatusText.Text = $"{profile.Name} profile • Ready";
-            }
-            
-            GpuUsageText.Text = "0%";
-            LatencyText.Text = "—";
-            EngineStatusText.Text = "Idle";
-            EngineStatusText.Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextSecondaryBrush"];
+            DisableOdyFakeHZ();
         }
+    }
+
+    private void EnableOdyFakeHZ()
+    {
+        _isEnabled = true;
+
+        try
+        {
+            var profile = _profileManager.ActiveProfile;
+            if (profile == null) return;
+
+            EnableButton.Content = "DISABLE ODY-FAKEHZ";
+            
+            if (!_displayManager.ValidateRefreshRate(profile.TargetHz))
+            {
+                StatusText.Text = $"Warning: {profile.TargetHz}Hz may exceed monitor capability";
+            }
+
+            var currentHz = _displayManager.GetCurrentMonitorInfo().RefreshRate;
+            var multiplier = Math.Max(1, profile.TargetHz / currentHz);
+
+            if (!_compositorManager.IsInitialized)
+            {
+                if (!_compositorManager.Initialize())
+                {
+                    throw new Exception("Failed to initialize compositor");
+                }
+            }
+
+            var mode = profile.ProcessingMode switch
+            {
+                ProcessingMode.GPU => OdyFakeHZ.Engine.ProcessingMode.GPU,
+                ProcessingMode.Hybrid => OdyFakeHZ.Engine.ProcessingMode.Hybrid,
+                _ => OdyFakeHZ.Engine.ProcessingMode.CPU
+            };
+
+            if (_interpolationEngine.Initialize(mode))
+            {
+                _interpolationEngine.TargetMultiplier = multiplier;
+                _interpolationEngine.Quality = profile.QualityLevel switch
+                {
+                    >= 80 => OdyFakeHZ.Engine.Interpolation.InterpolationQuality.High,
+                    >= 40 => OdyFakeHZ.Engine.Interpolation.InterpolationQuality.Balanced,
+                    _ => OdyFakeHZ.Engine.Interpolation.InterpolationQuality.Draft
+                };
+                
+                _interpolationEngine.Start();
+            }
+
+            _compositorManager.Start();
+            _performanceMonitor.StartMonitoring();
+            _captureManager.StartCapture(currentHz);
+
+            StatusText.Text = $"Active • {profile.Name} • {profile.TargetHz}Hz";
+            EngineStatusText.Text = "Active";
+            EngineStatusText.Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextPrimaryBrush"];
+            
+            _trayIcon.SetStatus(true);
+            _trayIcon.ShowNotification("Ody-FakeHZ", $"Enabled with {profile.Name} profile");
+        }
+        catch (Exception ex)
+        {
+            _isEnabled = false;
+            EnableButton.Content = "ENABLE ODY-FAKEHZ";
+            StatusText.Text = $"Error: {ex.Message}";
+            _trayIcon.SetStatus(false);
+        }
+    }
+
+    private void DisableOdyFakeHZ()
+    {
+        _isEnabled = false;
+        EnableButton.Content = "ENABLE ODY-FAKEHZ";
+        
+        _compositorManager.Stop();
+        _interpolationEngine.Stop();
+        _performanceMonitor.StopMonitoring();
+        _captureManager.StopCapture();
+        
+        var profile = _profileManager.ActiveProfile;
+        if (profile != null)
+        {
+            StatusText.Text = $"{profile.Name} profile • Ready";
+        }
+        
+        GpuUsageText.Text = "0%";
+        LatencyText.Text = "—";
+        EngineStatusText.Text = "Idle";
+        EngineStatusText.Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextSecondaryBrush"];
+        
+        _trayIcon.SetStatus(false);
     }
 
     private void ModeToggle_Toggled(object sender, RoutedEventArgs e)
