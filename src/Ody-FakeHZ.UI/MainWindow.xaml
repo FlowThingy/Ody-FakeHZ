@@ -320,12 +320,103 @@
                             Text="ADVANCED SETTINGS" 
                             Style="{StaticResource CaptionTextStyle}"/>
                         
+                        <!-- Processing Mode -->
                         <Border Style="{StaticResource CardStyle}">
-                            <TextBlock 
-                                Text="Advanced controls will appear here" 
-                                Style="{StaticResource BodyTextStyle}"
-                                HorizontalAlignment="Center"
-                                Margin="0,16"/>
+                            <StackPanel Spacing="12">
+                                <TextBlock 
+                                    Text="Processing Mode" 
+                                    Style="{StaticResource SubheaderTextStyle}"/>
+                                <TextBlock 
+                                    Text="GPU mode is fastest but requires compatible hardware" 
+                                    Style="{StaticResource CaptionTextStyle}"
+                                    TextWrapping="Wrap"/>
+                                
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <RadioButton 
+                                        x:Name="GpuModeRadio"
+                                        Content="GPU" 
+                                        GroupName="ProcessingMode"
+                                        IsChecked="True"
+                                        Click="ProcessingMode_Changed"/>
+                                    <RadioButton 
+                                        x:Name="HybridModeRadio"
+                                        Content="Hybrid" 
+                                        GroupName="ProcessingMode"
+                                        Click="ProcessingMode_Changed"/>
+                                    <RadioButton 
+                                        x:Name="CpuModeRadio"
+                                        Content="CPU" 
+                                        GroupName="ProcessingMode"
+                                        Click="ProcessingMode_Changed"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Latency vs Quality -->
+                        <Border Style="{StaticResource CardStyle}">
+                            <StackPanel Spacing="12">
+                                <TextBlock 
+                                    Text="Latency vs Quality" 
+                                    Style="{StaticResource SubheaderTextStyle}"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock 
+                                        Grid.Column="0"
+                                        Text="Responsive" 
+                                        Style="{StaticResource CaptionTextStyle}"
+                                        VerticalAlignment="Center"/>
+                                    <TextBlock 
+                                        Grid.Column="1"
+                                        Text="Quality" 
+                                        Style="{StaticResource CaptionTextStyle}"
+                                        VerticalAlignment="Center"/>
+                                </Grid>
+                                <Slider 
+                                    x:Name="QualitySlider"
+                                    Minimum="0" 
+                                    Maximum="100" 
+                                    Value="50"
+                                    ValueChanged="QualitySlider_ValueChanged"/>
+                                <TextBlock 
+                                    x:Name="QualityValueText"
+                                    Text="Quality: 50" 
+                                    Style="{StaticResource CaptionTextStyle}"
+                                    HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Per-App Settings -->
+                        <Border Style="{StaticResource CardStyle}">
+                            <StackPanel Spacing="12">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock 
+                                        Grid.Column="0"
+                                        Text="Per-Application Control" 
+                                        Style="{StaticResource SubheaderTextStyle}"/>
+                                    <Button 
+                                        Grid.Column="1"
+                                        Content="Refresh" 
+                                        Style="{StaticResource MonochromeButtonStyle}"
+                                        Click="RefreshApps_Click"
+                                        Padding="12,6"/>
+                                </Grid>
+                                
+                                <TextBlock 
+                                    Text="Enable or disable smoothing for specific applications" 
+                                    Style="{StaticResource CaptionTextStyle}"
+                                    TextWrapping="Wrap"/>
+
+                                <ScrollViewer MaxHeight="200" VerticalScrollBarVisibility="Auto">
+                                    <StackPanel x:Name="AppListPanel" Spacing="8"/>
+                                </ScrollViewer>
+                            </StackPanel>
                         </Border>
                     </StackPanel>
 

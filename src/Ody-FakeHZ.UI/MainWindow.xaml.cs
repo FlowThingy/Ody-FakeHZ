@@ -126,6 +126,22 @@ public sealed partial class MainWindow : Window
         if (profile != null)
         {
             HzSliderControl.Value = profile.TargetHz;
+            QualitySlider.Value = profile.QualityLevel;
+            
+            // Set processing mode radio buttons
+            switch (profile.ProcessingMode)
+            {
+                case ProcessingMode.GPU:
+                    GpuModeRadio.IsChecked = true;
+                    break;
+                case ProcessingMode.Hybrid:
+                    HybridModeRadio.IsChecked = true;
+                    break;
+                case ProcessingMode.CPU:
+                    CpuModeRadio.IsChecked = true;
+                    break;
+            }
+            
             UpdateStatusForProfile(profile);
         }
     }
@@ -244,7 +260,130 @@ public sealed partial class MainWindow : Window
         var toggle = sender as ToggleSwitch;
         if (toggle == null) return;
 
-        AdvancedSettings.Visibility = toggle.IsOn ? Visibility.Visible : Visibility.Collapsed;
+        if (toggle.IsOn)
+        {
+            AdvancedSettings.Visibility = Visibility.Visible;
+            LoadRunningApps();
+        }
+        else
+        {
+            AdvancedSettings.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private void ProcessingMode_Changed(object sender, RoutedEventArgs e)
+    {
+        var profile = _profileManager.ActiveProfile;
+        if (profile == null) return;
+
+        if (GpuModeRadio.IsChecked == true)
+        {
+            profile.ProcessingMode = ProcessingMode.GPU;
+        }
+        else if (HybridModeRadio.IsChecked == true)
+        {
+            profile.ProcessingMode = ProcessingMode.Hybrid;
+        }
+        else if (CpuModeRadio.IsChecked == true)
+        {
+            profile.ProcessingMode = ProcessingMode.CPU;
+        }
+
+        _profileManager.UpdateActiveProfile(p => p.ProcessingMode = profile.ProcessingMode);
+    }
+
+    private void QualitySlider_ValueChanged(object sender, Microsoft.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e)
+    {
+        var value = (int)e.NewValue;
+        QualityValueText.Text = $"Quality: {value}";
+        
+        _profileManager.UpdateActiveProfile(p => p.QualityLevel = value);
+    }
+
+    private void RefreshApps_Click(object sender, RoutedEventArgs e)
+    {
+        LoadRunningApps();
+    }
+
+    private void LoadRunningApps()
+    {
+        AppListPanel.Children.Clear();
+        
+        var apps = _appFilterManager.GetRunningApplications();
+        
+        if (apps.Count == 0)
+        {
+            var noApps = new TextBlock
+            {
+                Text = "No running applications with windows found",
+                Style = (Style)Application.Current.Resources["CaptionTextStyle"],
+                Margin = new Thickness(0, 8, 0, 8)
+            };
+            AppListPanel.Children.Add(noApps);
+            return;
+        }
+
+        foreach (var app in apps)
+        {
+            var appCard = new Border
+            {
+                Style = (Style)Application.Current.Resources["CardStyle"],
+                Padding = new Thickness(12),
+                Margin = new Thickness(0, 0, 0, 4)
+            };
+
+            var grid = new Grid();
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+            var textStack = new StackPanel { Spacing = 4 };
+            
+            var nameText = new TextBlock
+            {
+                Text = app.ProcessName,
+                Style = (Style)Application.Current.Resources["BodyTextStyle"],
+                Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextPrimaryBrush"]
+            };
+            
+            var titleText = new TextBlock
+            {
+                Text = app.WindowTitle,
+                Style = (Style)Application.Current.Resources["CaptionTextStyle"],
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                MaxLines = 1
+            };
+
+            textStack.Children.Add(nameText);
+            textStack.Children.Add(titleText);
+
+            var toggle = new ToggleSwitch
+            {
+                IsOn = app.IsEnabled,
+                OnContent = "",
+                OffContent = ""
+            };
+            
+            toggle.Toggled += (s, args) =>
+            {
+                if (toggle.IsOn)
+                {
+                    _appFilterManager.EnableApp(app.ProcessName);
+                }
+                else
+                {
+                    _appFilterManager.DisableApp(app.ProcessName);
+                }
+            };
+
+            Grid.SetColumn(textStack, 0);
+            Grid.SetColumn(toggle, 1);
+
+            grid.Children.Add(textStack);
+            grid.Children.Add(toggle);
+
+            appCard.Child = grid;
+            AppListPanel.Children.Add(appCard);
+        }
     }
 
     private void ProfileCard_PointerPressed(object sender, PointerRoutedEventArgs e)
