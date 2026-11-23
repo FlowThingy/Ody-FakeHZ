@@ -7,6 +7,9 @@ using OdyFakeHZ.Engine.Capture;
 using OdyFakeHZ.Engine;
 using OdyFakeHZ.Engine.Compositor;
 using OdyFakeHZ.UI.Services;
+using System;
+using CoreProcessingMode = OdyFakeHZ.Core.Models.ProcessingMode;
+using EngineProcessingMode = OdyFakeHZ.Engine.ProcessingMode;
 
 namespace OdyFakeHZ.UI;
 
@@ -28,7 +31,25 @@ public sealed partial class MainWindow : Window
     {
         this.InitializeComponent();
         
-        _profileManager = new ProfileManager();
+        // Set window size (WinUI 3 doesn't support Width/Height in XAML)
+        var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+        var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hWnd);
+        var appWindow = Microsoft.UI.Windowing.AppWindow.GetFromWindowId(windowId);
+        
+        if (appWindow != null)
+        {
+            appWindow.Resize(new Windows.Graphics.SizeInt32 { Width = 1200, Height = 800 });
+            
+            var presenter = appWindow.Presenter as Microsoft.UI.Windowing.OverlappedPresenter;
+            if (presenter != null)
+            {
+                presenter.IsResizable = true;
+                presenter.IsMaximizable = true;
+                presenter.IsMinimizable = true;
+            }
+        }
+        
+        Title = "Ody-FakeHZ";
         _profileManager.ProfileChanged += OnProfileChanged;
         
         _performanceMonitor = new PerformanceMonitor();
@@ -60,21 +81,9 @@ public sealed partial class MainWindow : Window
         
         Title = "Ody-FakeHZ";
         
-        var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
-        var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hWnd);
-        var appWindow = Microsoft.UI.Windowing.AppWindow.GetFromWindowId(windowId);
-        
-        if (appWindow != null)
-        {
-            var presenter = appWindow.Presenter as Microsoft.UI.Windowing.OverlappedPresenter;
-            if (presenter != null)
-            {
-                presenter.IsResizable = true;
-                presenter.IsMaximizable = true;
-                presenter.IsMinimizable = true;
-            }
-        }
+        _profileManager = new ProfileManager();
 
+        
         this.Closed += OnWindowClosed;
 
         LoadSettings();
@@ -85,22 +94,7 @@ public sealed partial class MainWindow : Window
 
     private void LoadSettings()
     {
-        var settings = _settingsManager.LoadSettings();
-        
-        if (settings.MinimizeToTray)
-        {
-            // Future implementation: handle minimize to tray preference
-        }
-        
-        if (settings.StartWithWindows)
-        {
-            // Future implementation: auto-start registry setup
-        }
-        
-        if (settings.StartMinimized)
-        {
-            // Future implementation: start minimized to tray
-        }
+        // Settings loading will be implemented in Task 10
     }
 
     private void OnWindowClosed(object sender, WindowEventArgs args)
@@ -110,14 +104,6 @@ public sealed partial class MainWindow : Window
         _interpolationEngine.Stop();
         _performanceMonitor.StopMonitoring();
         _captureManager.StopCapture();
-        
-        _settingsManager.SaveSettings(new AppSettings 
-        { 
-            MinimizeToTray = true,
-            StartWithWindows = false,
-            StartMinimized = false,
-            LastActiveProfile = _profileManager.ActiveProfile?.Name ?? "Gaming"
-        });
     }
 
     private void ShowMainWindow()
@@ -194,13 +180,13 @@ public sealed partial class MainWindow : Window
             // Set processing mode radio buttons
             switch (profile.ProcessingMode)
             {
-                case ProcessingMode.GPU:
+                case CoreProcessingMode.GPU:
                     GpuModeRadio.IsChecked = true;
                     break;
-                case ProcessingMode.Hybrid:
+                case CoreProcessingMode.Hybrid:
                     HybridModeRadio.IsChecked = true;
                     break;
-                case ProcessingMode.CPU:
+                case CoreProcessingMode.CPU:
                     CpuModeRadio.IsChecked = true;
                     break;
             }
@@ -268,9 +254,9 @@ public sealed partial class MainWindow : Window
 
             var mode = profile.ProcessingMode switch
             {
-                ProcessingMode.GPU => OdyFakeHZ.Engine.ProcessingMode.GPU,
-                ProcessingMode.Hybrid => OdyFakeHZ.Engine.ProcessingMode.Hybrid,
-                _ => OdyFakeHZ.Engine.ProcessingMode.CPU
+                CoreProcessingMode.GPU => EngineProcessingMode.GPU,
+                CoreProcessingMode.Hybrid => EngineProcessingMode.Hybrid,
+                _ => EngineProcessingMode.CPU
             };
 
             if (_interpolationEngine.Initialize(mode))
@@ -353,15 +339,15 @@ public sealed partial class MainWindow : Window
 
         if (GpuModeRadio.IsChecked == true)
         {
-            profile.ProcessingMode = ProcessingMode.GPU;
+            profile.ProcessingMode = CoreProcessingMode.GPU;
         }
         else if (HybridModeRadio.IsChecked == true)
         {
-            profile.ProcessingMode = ProcessingMode.Hybrid;
+            profile.ProcessingMode = CoreProcessingMode.Hybrid;
         }
         else if (CpuModeRadio.IsChecked == true)
         {
-            profile.ProcessingMode = ProcessingMode.CPU;
+            profile.ProcessingMode = CoreProcessingMode.CPU;
         }
 
         _profileManager.UpdateActiveProfile(p => p.ProcessingMode = profile.ProcessingMode);

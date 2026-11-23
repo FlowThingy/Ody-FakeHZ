@@ -5,40 +5,29 @@
     <!-- Monochrome Color Palette -->
     
     <!-- Black -->
-    <Color x:Key="ColorBlack">#000000</Color>
-    <SolidColorBrush x:Key="BrushBlack" Color="{StaticResource ColorBlack}"/>
+    <SolidColorBrush x:Key="BrushBlack" Color="#000000"/>
     
     <!-- White -->
-    <Color x:Key="ColorWhite">#FFFFFF</Color>
-    <SolidColorBrush x:Key="BrushWhite" Color="{StaticResource ColorWhite}"/>
+    <SolidColorBrush x:Key="BrushWhite" Color="#FFFFFF"/>
     
     <!-- Gray Scale -->
-    <Color x:Key="ColorGray10">#1A1A1A</Color>
-    <SolidColorBrush x:Key="BrushGray10" Color="{StaticResource ColorGray10}"/>
+    <SolidColorBrush x:Key="BrushGray10" Color="#1A1A1A"/>
     
-    <Color x:Key="ColorGray20">#333333</Color>
-    <SolidColorBrush x:Key="BrushGray20" Color="{StaticResource ColorGray20}"/>
+    <SolidColorBrush x:Key="BrushGray20" Color="#333333"/>
     
-    <Color x:Key="ColorGray30">#4D4D4D</Color>
-    <SolidColorBrush x:Key="BrushGray30" Color="{StaticResource ColorGray30}"/>
+    <SolidColorBrush x:Key="BrushGray30" Color="#4D4D4D"/>
     
-    <Color x:Key="ColorGray40">#666666</Color>
-    <SolidColorBrush x:Key="BrushGray40" Color="{StaticResource ColorGray40}"/>
+    <SolidColorBrush x:Key="BrushGray40" Color="#666666"/>
     
-    <Color x:Key="ColorGray50">#808080</Color>
-    <SolidColorBrush x:Key="BrushGray50" Color="{StaticResource ColorGray50}"/>
+    <SolidColorBrush x:Key="BrushGray50" Color="#808080"/>
     
-    <Color x:Key="ColorGray60">#999999</Color>
-    <SolidColorBrush x:Key="BrushGray60" Color="{StaticResource ColorGray60}"/>
+    <SolidColorBrush x:Key="BrushGray60" Color="#999999"/>
     
-    <Color x:Key="ColorGray70">#B3B3B3</Color>
-    <SolidColorBrush x:Key="BrushGray70" Color="{StaticResource ColorGray70}"/>
+    <SolidColorBrush x:Key="BrushGray70" Color="#B3B3B3"/>
     
-    <Color x:Key="ColorGray80">#CCCCCC</Color>
-    <SolidColorBrush x:Key="BrushGray80" Color="{StaticResource ColorGray80}"/>
+    <SolidColorBrush x:Key="BrushGray80" Color="#CCCCCC"/>
     
-    <Color x:Key="ColorGray90">#E6E6E6</Color>
-    <SolidColorBrush x:Key="BrushGray90" Color="{StaticResource ColorGray90}"/>
+    <SolidColorBrush x:Key="BrushGray90" Color="#E6E6E6"/>
 
     <!-- Semantic Colors -->
     <StaticResource x:Key="AppBackgroundBrush" ResourceKey="BrushBlack"/>
@@ -109,7 +98,6 @@
         <Setter Property="HorizontalAlignment" Value="Stretch"/>
         <Setter Property="HorizontalContentAlignment" Value="Center"/>
         <Setter Property="VerticalContentAlignment" Value="Center"/>
-        <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="Transitions">
             <Setter.Value>
                 <TransitionCollection>
@@ -169,7 +157,6 @@
     <!-- Profile Card Style -->
     <Style x:Key="ProfileCardStyle" TargetType="Border" BasedOn="{StaticResource CardStyle}">
         <Setter Property="MinHeight" Value="80"/>
-        <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="Transitions">
             <Setter.Value>
                 <TransitionCollection>
